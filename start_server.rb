@@ -5,7 +5,7 @@ rescue LoadError
 end
 require 'socket'
 require 'texplay'
-require 'msgpack'
+#require 'msgpack'
 include Gosu
 include Chingu
 require './actor'
