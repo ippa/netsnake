@@ -2,7 +2,7 @@ class SyncNetwork < GameState
   trait :timer
   
   def setup
-    Text.create("Client died, syncing network!", :size => 30)
+    puts "* A client died, pinging all clients to see who's alive",
     after(5000) { pop_game_state }
         
     previous_game_state.game_objects_of_class(Player).each do |player|
@@ -17,16 +17,15 @@ class SyncNetwork < GameState
       data, sender = previous_game_state.read_data
       previous_game_state.handle_data(data, sender) if data
     rescue Errno::ECONNRESET => e
+      nil
     end
-    
-    $window.caption = "Client died, syncing network!"
   end
   
   def finalize
     dead_uuids = []
     previous_game_state.game_objects_of_class(Player).each do |player|
       if player.unanswered_packets > 0 
-        puts "#{player.uuid} didn't respond, destroying..."
+        puts "* Destroying player #{player.uuid} since it didn't respond to ping."
         dead_uuids << player.uuid
         player.destroy
       end
