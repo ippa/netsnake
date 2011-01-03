@@ -1,20 +1,31 @@
 class Client < Chingu::GameState
   include Network
     
-  def setup
+  def initialize(options = {})
+    @ip = options[:ip] || "192.168.0.1"
+    @port = 7778
+    
+    unless @ip
+      puts "No serverIP given, please snart netsnake like this:"
+      puts "ruby netsnake.rb <ip of server>"
+      exit
+    end
+    
     self.input = [:esc, :left, :right, :up, :down]
-  
     @socket = UDPSocket.new
+    @socket.connect(@ip, @port)
     
-    
-    ## @socket.connect("127.0.0.1", 7778)
-    @socket.connect("192.168.0.1", 7778)
-    ##@socket.connect("83.233.88.194", 7778)
+    puts "Connecting to #{@ip}:#{@port}"
     
     @level_image = TexPlay.create_blank_image($window, $window.width, $window.height, :color => :black)
     @level = GameObject.create(:image => @level_image, :rotation_center => :top_left, :factor => $window.factor)
     @player = Player.create(:uuid => (rand * 100000).to_i, :factor => 4)
-    @packet_counter = 0
+    @packet_counter = 0    
+    
+    super
+  end
+  
+  def setup
   end
   def esc; exit; end
   

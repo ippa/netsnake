@@ -20,7 +20,7 @@ require_all './src/*'
 class StartGame < Chingu::Window 
   def initialize
     super(600, 400, false)
-    push_game_state(Client)
+    push_game_state(Client.new(:ip => ARGV.first))
   end
 end
 
