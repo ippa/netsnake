@@ -5,7 +5,11 @@ class Client < Chingu::GameState
     self.input = [:esc, :left, :right, :up, :down]
   
     @socket = UDPSocket.new
-    @socket.connect("127.0.0.1", 7778)
+    
+    
+    ## @socket.connect("127.0.0.1", 7778)
+    @socket.connect("192.168.0.1", 7778)
+    ##@socket.connect("83.233.88.194", 7778)
     
     @level_image = TexPlay.create_blank_image($window, $window.width, $window.height, :color => :black)
     @level = GameObject.create(:image => @level_image, :rotation_center => :top_left, :factor => $window.factor)

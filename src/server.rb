@@ -36,7 +36,6 @@ class Server < Chingu::GameState
     begin
       data, sender = read_data
     rescue Errno::ECONNRESET => e # Previous Send resultet in ICMP Port Unreachable
-      puts "* SyncNetwork"
       push_game_state(SyncNetwork)
     end
         
@@ -61,17 +60,17 @@ class Server < Chingu::GameState
       end      
     end
     
-    # All players dead, restart level!
+    # All players dead, restart level
     if Player.size > 0 && Player.alive.size == 0
       restart
+    else
+      Player.alive.each { |player| @level_array[player.x][player.y] = true }
+      update_clients
     end
-      
-    Player.each { |player| @level_array[player.x][player.y] = true }
-    
-    update_clients
   end
   
   def restart
+    push_game_state(SyncNetwork)
     puts "* Restarting game"
     send_data_to_all({:cmd => :restart})
     @level_array = Array.new(@width) { Array.new(@height) }
@@ -95,7 +94,9 @@ class Server < Chingu::GameState
   end
   
   def send_data_to_player(player, data)
-    @socket.send(Marshal.dump(data), 0, player.client_ip, player.client_port)
+    #@socket.send(Marshal.dump(data), 0, player.client_ip, player.client_port)
+    #@socket.send(data.to_json, 0, player.client_ip, player.client_port)
+    @socket.send(data.to_yaml, 0, player.client_ip, player.client_port)
     @socket.flush
   end  
   
@@ -120,11 +121,12 @@ class Server < Chingu::GameState
     if game_object == nil
       return if game_objects.size >= @max_game_objects
       game_object = Player.create(data)
-      puts "* New player: #{data[:uuid]}"
+      game_object.client_ip = sender[3]
+      game_object.client_port = sender[1]
+      
+      puts "* New player: #{data[:uuid]} [#{game_object.client_ip}:#{game_object.client_port}]"
     end
     
-    game_object.client_ip = sender[3]
-    game_object.client_port = sender[1]
     
     puts "-> #{data[:cmd].to_s} from #{data[:uuid]}"
     

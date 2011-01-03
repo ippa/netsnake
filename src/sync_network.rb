@@ -2,8 +2,8 @@ class SyncNetwork < GameState
   trait :timer
   
   def setup
-    puts "* A client died, pinging all clients to see who's alive",
-    after(5000) { pop_game_state }
+    puts "* Pinging all clients to see who's alive"
+    after(3000) { pop_game_state }
         
     previous_game_state.game_objects_of_class(Player).each do |player|
       player.unanswered_packets = 1

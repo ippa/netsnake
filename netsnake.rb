@@ -12,14 +12,13 @@ rescue LoadError
 end
 
 require 'socket'
+require 'yaml'
 include Gosu
 include Chingu
 require_all './src/*'
 
 class StartGame < Chingu::Window 
   def initialize
-    #self.factor = 1
-    #retrofy
     super(600, 400, false)
     push_game_state(Client)
   end
