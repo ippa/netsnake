@@ -14,7 +14,6 @@ end
 require 'socket'
 include Gosu
 include Chingu
-require_all './game_states/*'
 require_all './src/*'
 
 class StartGame < Chingu::Window 
