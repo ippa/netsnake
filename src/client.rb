@@ -1,8 +1,8 @@
 class Client < Chingu::GameState
-  include Network
     
   def initialize(options = {})
-    @ip = options[:ip] || "192.168.0.1"
+    #@ip = options[:ip] || "192.168.0.1"
+    @ip = options[:ip] || "127.0.0.1"
     @port = 7778
     
     unless @ip
@@ -12,18 +12,38 @@ class Client < Chingu::GameState
     end
     
     self.input = [:esc, :left, :right, :up, :down]
-    @socket = UDPSocket.new
-    @socket.connect(@ip, @port)
-    
-    puts "Connecting to #{@ip}:#{@port}"
+
+    @socket = nil
     
     @level_image = TexPlay.create_blank_image($window, $window.width, $window.height, :color => :black)
     @level = GameObject.create(:image => @level_image, :rotation_center => :top_left, :factor => $window.factor)
     @player = Player.create(:uuid => (rand * 100000).to_i, :factor => 4)
     @packet_counter = 0    
     
+    connect_to_server
+    
+    send_data(@player.start_data)
+    
     super
   end
+    
+  def connect_to_server
+    puts "Connecting to #{@ip}:#{@port}"
+    begin
+      @socket = TCPSocket.new(@ip, @port)
+      puts "Connected"
+    rescue Errno::ECONNREFUSED
+      exit
+      puts "Couldn't connect, trying again in 3 seconds"
+      sleep 3
+      retry
+    end
+  end
+  
+  def send_data(data)
+    @socket.puts(data.to_yaml)
+  end
+  
   
   def setup
   end
@@ -53,22 +73,39 @@ class Client < Chingu::GameState
   def update
     super
     
-    begin
-      data, sender = read_data
-      handle_data(data, sender) if data
-    rescue Errno::ECONNRESET => e # Previous Send resultet in ICMP Port Unreachable
-      puts "Can't communicate with server (ICMP Port Unreachable from server)"
-    end
+    #connect_to_server if @socket.nil?
     
+    if IO.select([@socket], nil, nil, 0.02)
+      begin
+        packet, sender = @socket.recvfrom(1000)
+        
+        begin
+          data = YAML.load(packet)
+          handle_data(data) if data
+        rescue ArgumentError
+          puts "bad yaml"
+        end
+      rescue Errno::ECONNABORTED
+        puts "* Server disconnected"
+        exit
+      end
+    end
+        
+    #
+    #
     Player.each do |player|
+      #@level_image.line player.previous_x, player.previous_y, player.x, player.y, :color => :white
       @level_image.pixel(player.x, player.y, :color => :white)
     end
     
     $window.caption = "Snake Online. [UUID: #{@player.uuid}] #{@player.x}/#{@player.y}. Packets recieved: #{@packet_counter} [FPS: #{$window.fps}]"
   end
     
-  def handle_data(data, sender)
+  def handle_data(data)
     @packet_counter += 1
+    
+    p data  if data[:uuid] == @player.uuid && data[:cmd] == :position
+    
     if data[:uuid]
       game_object = Player.find_by_uuid(data[:uuid]) || Player.create(data)
       case data[:cmd] 
@@ -99,5 +136,5 @@ end
 
 # If fils is executed, not required.
 if __FILE__ == $0
-  Game.new.show
+  `netsnake.rbw`
 end

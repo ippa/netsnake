@@ -1,1 +1,1 @@
-ruby netsnake.rb server
+ruby netsnake.rbw server
