@@ -34,6 +34,8 @@ class Server < Chingu::GameState
                        [10,@height-10,1,0]
                        ]
     @colors = [:red, :cyan, :yellow, :green]
+    
+    every(5000) { puts $window.fps }
   end
       
   def update

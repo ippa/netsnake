@@ -4,8 +4,8 @@ class Client < Chingu::GameState
   def initialize(options = {})
     super
     
-    #@ip = options[:ip] || "192.168.0.1"
-    @ip = options[:ip] || "127.0.0.1"
+    @ip = options[:ip] || "192.168.0.1"
+    #@ip = options[:ip] || "127.0.0.1"
     @port = 7778
     
     unless @ip
@@ -42,7 +42,7 @@ class Client < Chingu::GameState
         @socket = TCPSocket.new(@ip, @port)
         @socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
         send_data(@player.start_data)
-        every(4000) { ping }
+        ping; every(6000) { ping, :name => :ping }
       end
     rescue Errno::ECONNREFUSED
       $window.caption = "Server: CONNECTION REFUSED, retrying in 3 seconds..."
@@ -66,11 +66,13 @@ class Client < Chingu::GameState
         
         begin
           packets = packet.split("--- ")
-          if packets.size > 0
+          if packets.size > 1
             @packet_buffer << packets[0...-1].join("--- ")
             YAML::load_documents(@packet_buffer) { |doc| on_packet(doc) }
             @packet_buffer = packets.last
-          end          
+          else
+            @packet_buffer << packets.join
+          end
         rescue ArgumentError
           puts "!! bad yaml !!\n#{packet}"
         end
