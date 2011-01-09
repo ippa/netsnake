@@ -1,8 +1,8 @@
 class Client < Chingu::GameState
     
   def initialize(options = {})
-    #@ip = options[:ip] || "192.168.0.1"
-    @ip = options[:ip] || "127.0.0.1"
+    @ip = options[:ip] || "192.168.0.1"
+    #@ip = options[:ip] || "127.0.0.1"
     @port = 7778
     
     unless @ip

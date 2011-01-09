@@ -127,7 +127,7 @@ class Server < Chingu::GameState
         puts "!! didn't send whole packet #(#{size}), only: #{sent}"
       end
       
-    rescue Errno::ECONNABORTED, Errno::ECONNRESET
+    rescue Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       puts "* Player #{player.uuid} disconnected"
       player.destroy    
     end
