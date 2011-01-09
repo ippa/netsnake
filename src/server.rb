@@ -35,6 +35,8 @@ class Server < Chingu::GameState
                        ]
     @colors = [:red, :cyan, :yellow, :green]
     
+    @yaml_stream = YAML::Stream.new
+    
     every(5000) { puts "FPS: #{$window.fps}" }
   end
       
@@ -91,7 +93,12 @@ class Server < Chingu::GameState
       Player.alive.each { |player| @level_array[player.x][player.y] = true }
       update_clients
     end
-        
+    
+    Player.each do |player|
+      player.socket.write(@yaml_stream.emit)
+      player.socket.flush
+    end
+    @yaml_stream = YAML::Stream.new
   end
   
   def restart
@@ -116,14 +123,15 @@ class Server < Chingu::GameState
       send_data_to_player(player, player.restart_data)
       puts "Started player #{player.uuid} @ postion ##{index}"
     end
-  end  
+  end
   
   def collision_at?(x,y)
     @level_array[x][y]
   end
   
   def send_data_to_all(data)
-    Player.each { |player| send_data_to_player(player, data) }
+    @yaml_stream.add(data)    
+    # Player.each { |player| send_data_to_player(player, data)  }
   end
   
   def send_data_to_player(player, data)
