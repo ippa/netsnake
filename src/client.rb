@@ -62,11 +62,9 @@ class Client < Chingu::GameState
     
     if IO.select([@socket], nil, nil, 0.0)
       begin
-        packet, sender = @socket.recvfrom(1000)
-        puts packet
-        
+        packet, sender = @socket.recvfrom(100)        
         begin
-          packets = packet.split("--- ")
+          packets = packet.split("--- ")          
           if packets.size > 1
             @packet_buffer << packets[0...-1].join("--- ")
             YAML::load_documents(@packet_buffer) { |doc| on_packet(doc) }
@@ -114,7 +112,6 @@ class Client < Chingu::GameState
         when :position
           player.x, player.y = data[:x], data[:y]
           player.previous_x, player.previous_y = data[:previous_x], data[:previous_y]
-          
           player.color = data[:color]
           player.alive = true
         when :destroy

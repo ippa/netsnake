@@ -13,7 +13,7 @@ class Server < Chingu::GameState
     
     begin
       @socket = TCPServer.new(@ip, @port)
-      #@socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
+      @socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       puts "* Server listening on #{@ip} port #{@port}"
     rescue 
       puts "Can't start server on #{@ip} port #{@port}. Exiting."
@@ -129,6 +129,7 @@ class Server < Chingu::GameState
   def send_data_to_player(player, data)
     begin
       player.socket.write(data.to_yaml)
+      player.socket.flush
     rescue Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       puts "* Player #{player.uuid} disconnected"
       player.destroy
