@@ -5,9 +5,9 @@ Sourcecode: http://github.com/ippa/netsnake
 
 Simple, hectic and fun multiplayer-game!
 
-* Control your snake with the ARROW-keys
+* Control your snake with ARROW-keys
 
-* Try to make the others run into you, last moving snake on screen wins
+* Stay clear of other snakes + tru to make the others run into you -- last moving snake on screen wins
 
 * Client/server game, connect up to 4 players att he same time
 
@@ -15,11 +15,21 @@ Simple, hectic and fun multiplayer-game!
 == START A SERVER
   ruby netsnake.rbw server
 
-it will listen to 0.0.0.0 port 7778
+Server will listen to 0.0.0.0 port 7778
+
 
 == CONNECT WITH A CLIENT
   ruby netsnake.rbw <IP of server>
 
 You might have to wait for the current game to finish before your snake appears on screen.
-A lot of lag will make it harder to play, but you should be able to compensate before you run into walls!
+A lot of lag will make it harder to play, but you should be able to compensate before you run into others and die :].
 
+
+== WINDOWS
+Windows executable coming...
+
+
+== PLAY FROM SOURCE
+You'll need:
+* Ruby 1.9.2
+* Rubygems 'chingu', 'gosu' and 'texplay'
