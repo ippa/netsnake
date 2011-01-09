@@ -14,6 +14,7 @@ end
 require 'socket'
 require 'json'
 require 'yaml'
+require 'timeout'
 include Gosu
 include Chingu
 require_all './src/*'

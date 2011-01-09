@@ -13,7 +13,7 @@ class Server < Chingu::GameState
     
     begin
       @socket = TCPServer.new(@ip, @port)
-      @socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
+      #@socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       puts "* Server listening on #{@ip} port #{@port}"
     rescue 
       puts "Can't start server on #{@ip} port #{@port}. Exiting."
@@ -33,7 +33,7 @@ class Server < Chingu::GameState
                        [@width-10,10,-1,0],
                        [10,@height-10,1,0]
                        ]
-    @colors = [:red, :blue, :yellow, :green]
+    @colors = [:red, :cyan, :yellow, :green]
   end
     
   def update    
@@ -47,10 +47,10 @@ class Server < Chingu::GameState
     Player.each do |player|    
       if IO.select([player.socket], nil, nil, 0.0)
         begin
-          packet, sender = player.socket.recvfrom(1000)
-          data = YAML.load(packet)
-          #data = JSON.parse(packet)
-          handle_data(player, data) if data
+          
+          packet, sender = player.socket.recvfrom(1000)          
+          YAML::load_documents(packet) { |doc| on_packet(player, doc) }
+          
         rescue Errno::ECONNABORTED, Errno::ECONNRESET
           puts "* Player #{player.uuid} disconnected"
           player.destroy
@@ -63,10 +63,10 @@ class Server < Chingu::GameState
     # World logic, collision detection etc.
     Player.each do |player|
       # Wrap around when reaching window border
-      player.x = 0          if player.x > @width-1
-      player.x = @width-1   if player.x < 0
-      player.y = 0          if player.y > @height-1
-      player.y = @height-1  if player.y < 0
+      player.x = player.previous_x = 0          if player.x > @width-1
+      player.x = player.previous_x = @width-1   if player.x < 0
+      player.y = player.previous_y = 0          if player.y > @height-1
+      player.y = player.previous_y = @height-1  if player.y < 0
       
       # collide with other snakes
       if player.alive == true && collision_at?(player.x, player.y)
@@ -74,23 +74,15 @@ class Server < Chingu::GameState
         player.alive = false
         puts "* player #{player.uuid} died"
         
-        packet = []
-        packet << {:cmd => :kill, :uuid => player.uuid, :x => player.x, :y => player.y}
-        
+        send_data_to_all({:cmd => :kill, :uuid => player.uuid, :x => player.x, :y => player.y})
 
         if Player.alive.size == 1
           winner = Player.alive.first
           puts "* Winner: #{winner}"
-          
-          packet << {:cmd => :winner, :uuid => winner.uuid}
-          send_data_to_all(packet)
-          
-          sleep(0.5)
-          
+          send_data_to_all({:cmd => :winner, :uuid => winner.uuid})
           restart
-        else
-          send_data_to_all(packet)
         end
+        
       end
     end
     
@@ -107,10 +99,9 @@ class Server < Chingu::GameState
   def restart
     puts "* Restarting game ..."
     sleep 0.5
-    send_data_to_all({:cmd => :restart})
-    sleep 0.5
     @level_array = Array.new(@width) { Array.new(@height) }
     restart_players
+    sleep 0.5
   end
   
   def restart_players
@@ -121,6 +112,10 @@ class Server < Chingu::GameState
       player.y = @start_positions[index][1]
       player.velocity_x = @start_positions[index][2]
       player.velocity_y = @start_positions[index][3]
+      player.previous_x = player.x
+      player.previous_y = player.y
+      send_data_to_player(player, player.position_data)
+      send_data_to_player(player, player.restart_data)
       puts "Started player #{player.uuid} @ postion ##{index}"
     end
   end  
@@ -135,9 +130,7 @@ class Server < Chingu::GameState
   
   def send_data_to_player(player, data)
     begin
-      #player.socket.puts(data.to_json)
       player.socket.puts(data.to_yaml)
-      player.socket.flush
     rescue Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       puts "* Player #{player.uuid} disconnected"
       player.destroy
@@ -148,11 +141,12 @@ class Server < Chingu::GameState
   # Send data for each client to all clients
   #
   def update_clients
-    if Player.size > 0
-      all_players = []
-      big_update = Player.all.collect { |player| player.position_data }
-      send_data_to_all(big_update)
-    end
+    Player.each { |player| send_data_to_all(player.position_data) }
+    #if Player.size > 0
+    #  all_players = []
+    #  big_update = Player.all.collect { |player| player.position_data }
+    #  send_data_to_all(big_update)
+    #end
   end
   
   def new_player_from_socket(socket)
@@ -168,7 +162,7 @@ class Server < Chingu::GameState
     return player
   end
   
-  def handle_data(player, data)
+  def on_packet(player, data)
     return unless data[:uuid]
         
     puts "-> #{data[:cmd].to_s} from #{data[:uuid]}"
@@ -177,7 +171,12 @@ class Server < Chingu::GameState
       when :start
         player.uuid = data[:uuid]
       when :pong
-        player.unanswered_packets = 0
+        player.latency = (Goso::milliseconds - data[:milliseconds])
+        puts "-> PONG from #{player}, latency #{@latency}"
+      when :ping
+        puts "-> PING from #{player}"
+        # Send back timestamp recieved so client on other side can calcuate ping
+        send_data_to_player(player, {:uuid => player.uuid, :cmd => :pong, :milliseconds => data[:milliseconds]} )
       when :position 
         player.x = data[:x]
         player.y = data[:y]

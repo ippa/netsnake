@@ -1,15 +1,18 @@
 class Player < GameObject
   trait :velocity
   
-  attr_accessor :direction, :unanswered_packets, :alive, :socket, :start_position, :uuid, :color
+  attr_accessor :direction, :alive, :socket, :start_position, :uuid, :color
+  attr_accessor :previous_x, :previous_y
   
   def initialize(options = {})
     super
     
+    self.previous_x = self.x
+    self.previous_y = self.y
+    
     @uuid = options[:uuid]
     @direction = options[:direction]
     
-    @unanswered_packets = 0
     @start_position = nil
     @socket = nil
     @color = options[:color] || :white
@@ -29,16 +32,12 @@ class Player < GameObject
     {:uuid => @uuid, :color => self.color.argb}
   end
   
+  def restart_data
+    {:cmd => :restart, :uuid => uuid, :x => x, :y => y, :previous_x => previous_x, :previous_y => previous_y}
+  end
+  
   def start_data
     {:uuid => @uuid, :cmd => :start}
-  end
-
-  def ping_data
-    {:uuid => @uuid, :cmd => :ping}
-  end
-
-  def pong_data
-    {:uuid => @uuid, :cmd => :pong}
   end
 
   def direction_data
@@ -46,7 +45,7 @@ class Player < GameObject
   end
 
   def position_data
-    {:uuid => @uuid, :cmd => :position, :x => self.x, :y => self.y, :color => @color}
+    {:uuid => @uuid, :cmd => :position, :x => self.x, :y => self.y, :previous_x => self.previous_x, :previous_y => self.previous_y, :color => @color}
   end
 
   def to_s
