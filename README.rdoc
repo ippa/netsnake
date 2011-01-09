@@ -7,7 +7,7 @@ Simple, hectic and fun multiplayer-game!
 
 * Control your snake with ARROW-keys
 
-* Stay clear of other snakes + tru to make the others run into you -- last moving snake on screen wins
+* Stay clear of other snakes + try to make the others run into you -- last moving snake on screen wins
 
 * Client/server game, connect up to 4 players att he same time
 
