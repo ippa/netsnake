@@ -42,7 +42,7 @@ class Client < Chingu::GameState
         @socket = TCPSocket.new(@ip, @port)
         @socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
         send_data(@player.start_data)
-        ping; every(6000) { ping, :name => :ping }
+        ping; every(6000, :name => :ping) { ping }
       end
     rescue Errno::ECONNREFUSED
       $window.caption = "Server: CONNECTION REFUSED, retrying in 3 seconds..."
