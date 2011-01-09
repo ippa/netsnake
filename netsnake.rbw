@@ -12,6 +12,7 @@ rescue LoadError
 end
 
 require 'socket'
+require 'json'
 require 'yaml'
 include Gosu
 include Chingu
@@ -25,10 +26,6 @@ class StartGame < Chingu::Window
 end
 
 class StartServer < Chingu::Console
-  #def initialize
-  #  super(30.0)
-  #end
-  
   def setup
     push_game_state(Server)
   end

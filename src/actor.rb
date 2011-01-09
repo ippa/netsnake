@@ -1,16 +1,18 @@
 class Player < GameObject
   trait :velocity
   
-  attr_accessor :direction, :unanswered_packets, :alive, :socket, :start_position, :uuid
+  attr_accessor :direction, :unanswered_packets, :alive, :socket, :start_position, :uuid, :color
   
   def initialize(options = {})
     super
     
     @uuid = options[:uuid]
     @direction = options[:direction]
+    
     @unanswered_packets = 0
     @start_position = nil
     @socket = nil
+    @color = options[:color] || :white
 
     @alive = true
   end
@@ -23,6 +25,10 @@ class Player < GameObject
     all.select{ |x| x.alive == true}
   end
 
+  def color_data
+    {:uuid => @uuid, :color => self.color.argb}
+  end
+  
   def start_data
     {:uuid => @uuid, :cmd => :start}
   end
@@ -40,7 +46,7 @@ class Player < GameObject
   end
 
   def position_data
-    {:uuid => @uuid, :cmd => :position, :x => self.x, :y => self.y, :color => self.color.argb}
+    {:uuid => @uuid, :cmd => :position, :x => self.x, :y => self.y, :color => @color}
   end
 
   def to_s

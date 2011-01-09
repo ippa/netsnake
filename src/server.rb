@@ -13,6 +13,7 @@ class Server < Chingu::GameState
     
     begin
       @socket = TCPServer.new(@ip, @port)
+      @socket.setsockopt(Socket::IPPROTO_TCP,Socket::TCP_NODELAY,1)
       puts "* Server listening on #{@ip} port #{@port}"
     rescue 
       puts "Can't start server on #{@ip} port #{@port}. Exiting."
@@ -32,10 +33,7 @@ class Server < Chingu::GameState
                        [@width-10,10,-1,0],
                        [10,@height-10,1,0]
                        ]
-                       
-
-    every(100) { update_clients }
-    every(2000) { puts "FPS: #{$window.fps}" }
+    @colors = [:red, :blue, :yellow, :green]
   end
     
   def update    
@@ -47,10 +45,11 @@ class Server < Chingu::GameState
     end
     
     Player.each do |player|    
-      if IO.select([player.socket], nil, nil, 0.01)
+      if IO.select([player.socket], nil, nil, 0.0)
         begin
           packet, sender = player.socket.recvfrom(1000)
           data = YAML.load(packet)
+          #data = JSON.parse(packet)
           handle_data(player, data) if data
         rescue Errno::ECONNABORTED, Errno::ECONNRESET
           puts "* Player #{player.uuid} disconnected"
@@ -73,8 +72,25 @@ class Server < Chingu::GameState
       if player.alive == true && collision_at?(player.x, player.y)
         player.stop
         player.alive = false
-        send_data_to_all({:cmd => :kill, :uuid => player.uuid, :x => player.x, :y => player.y})
         puts "* player #{player.uuid} died"
+        
+        packet = []
+        packet << {:cmd => :kill, :uuid => player.uuid, :x => player.x, :y => player.y}
+        
+
+        if Player.alive.size == 1
+          winner = Player.alive.first
+          puts "* Winner: #{winner}"
+          
+          packet << {:cmd => :winner, :uuid => winner.uuid}
+          send_data_to_all(packet)
+          
+          sleep(0.5)
+          
+          restart
+        else
+          send_data_to_all(packet)
+        end
       end
     end
     
@@ -83,15 +99,16 @@ class Server < Chingu::GameState
       restart
     else
       Player.alive.each { |player| @level_array[player.x][player.y] = true }
-      #update_clients
+      update_clients
     end
         
   end
   
   def restart
-    sleep 1
-    puts "* Restarting game"
+    puts "* Restarting game ..."
+    sleep 0.5
     send_data_to_all({:cmd => :restart})
+    sleep 0.5
     @level_array = Array.new(@width) { Array.new(@height) }
     restart_players
   end
@@ -113,23 +130,17 @@ class Server < Chingu::GameState
   end
   
   def send_data_to_all(data)
-    Player.each do |player|
-      send_data_to_player(player, data)
-    end
+    Player.each { |player| send_data_to_player(player, data) }
   end
   
   def send_data_to_player(player, data)
     begin
-      #player.socket.puts(data.to_yaml)
-      #player.socket.send(data.to_yaml, 0)
-      size = data.to_yaml.size
-      if (sent = player.socket.write(data.to_yaml)) != size
-        puts "!! didn't send whole packet #(#{size}), only: #{sent}"
-      end
-      
+      #player.socket.puts(data.to_json)
+      player.socket.puts(data.to_yaml)
+      player.socket.flush
     rescue Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       puts "* Player #{player.uuid} disconnected"
-      player.destroy    
+      player.destroy
     end
   end
   
@@ -137,14 +148,17 @@ class Server < Chingu::GameState
   # Send data for each client to all clients
   #
   def update_clients
-    Player.alive.repeated_permutation(2).each do |player1, player2|
-      send_data_to_player(player1, player2.position_data)
-      # puts "#{player1} -> #{player2}"
+    if Player.size > 0
+      all_players = []
+      big_update = Player.all.collect { |player| player.position_data }
+      send_data_to_all(big_update)
     end
   end
   
   def new_player_from_socket(socket)
     player = Player.create
+    player.color = (@colors - Player.all.collect{|player| player.color}).first
+    
     player.socket = socket
     puts "* New player: #{socket.inspect}"
     
