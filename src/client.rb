@@ -4,8 +4,8 @@ class Client < Chingu::GameState
   def initialize(options = {})
     super
     
-    #@ip = options[:ip] || "192.168.0.1"
-    @ip = options[:ip] || "127.0.0.1"
+    @ip = options[:ip] || "192.168.0.1"
+    #@ip = options[:ip] || "127.0.0.1"
     @port = 7778
     
     unless @ip
@@ -63,6 +63,7 @@ class Client < Chingu::GameState
     if IO.select([@socket], nil, nil, 0.0)
       begin
         packet, sender = @socket.recvfrom(1000)
+        puts packet
         
         begin
           packets = packet.split("--- ")

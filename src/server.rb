@@ -128,7 +128,7 @@ class Server < Chingu::GameState
   
   def send_data_to_player(player, data)
     begin
-      player.socket.puts(data.to_yaml)
+      player.socket.write(data.to_yaml)
     rescue Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
       puts "* Player #{player.uuid} disconnected"
       player.destroy
