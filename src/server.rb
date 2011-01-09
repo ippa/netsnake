@@ -35,22 +35,19 @@ class Server < Chingu::GameState
                        ]
     @colors = [:red, :cyan, :yellow, :green]
   end
-    
-  def update    
+      
+  def update
     
     begin
-      socket = @socket.accept_nonblock
-      (Player.size >= @max_players) ? socket.close : new_player_from_socket(socket)
+      on_connection(@socket.accept_nonblock)  
     rescue IO::WaitReadable, Errno::EINTR
     end
     
     Player.each do |player|    
       if IO.select([player.socket], nil, nil, 0.0)
         begin
-          
-          packet, sender = player.socket.recvfrom(1000)          
+          packet, sender = player.socket.recvfrom(1000)         
           YAML::load_documents(packet) { |doc| on_packet(player, doc) }
-          
         rescue Errno::ECONNABORTED, Errno::ECONNRESET
           puts "* Player #{player.uuid} disconnected"
           player.destroy
@@ -82,7 +79,6 @@ class Server < Chingu::GameState
           send_data_to_all({:cmd => :winner, :uuid => winner.uuid})
           restart
         end
-        
       end
     end
     
@@ -142,11 +138,6 @@ class Server < Chingu::GameState
   #
   def update_clients
     Player.each { |player| send_data_to_all(player.position_data) }
-    #if Player.size > 0
-    #  all_players = []
-    #  big_update = Player.all.collect { |player| player.position_data }
-    #  send_data_to_all(big_update)
-    #end
   end
   
   def new_player_from_socket(socket)
@@ -160,6 +151,10 @@ class Server < Chingu::GameState
     # If 2+ ppl are playing, new player has to wait
     (Player.size > 2) ? (player.alive = false) : restart_players
     return player
+  end
+  
+  def on_connection(socket)
+    (Player.size >= @max_players) ? socket.close : new_player_from_socket(socket)
   end
   
   def on_packet(player, data)
