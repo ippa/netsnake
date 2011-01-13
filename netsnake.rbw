@@ -19,13 +19,25 @@ include Gosu
 include Chingu
 require_all './src/*'
 
+#
+# Client
+#
 class StartGame < Chingu::Window 
+  attr_accessor :server
+  
   def initialize
     super(600, 400, false)
+    on_input(:esc, :pop_game_state)
+    
+    @server = "192.168.0.1"
+    #push_game_state(Menu)
     push_game_state(Client.new(:ip => ARGV.first))
   end
 end
 
+#
+# Server
+#
 class StartServer < Chingu::Console
   def setup
     push_game_state(Server)

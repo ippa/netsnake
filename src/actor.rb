@@ -24,26 +24,18 @@ class Player < GameObject
     Player.all.select { |player| player.uuid == uuid }.first
   end
 
-  def self.alive
-    all.select{ |x| x.alive == true}
+  def self.find_by_socket(socket)
+    Player.all.select { |player| player.socket == socket }.first
   end
 
-  def color_data
-    {:uuid => @uuid, :color => self.color.argb}
+  def self.alive
+    all.select{ |x| x.alive == true}
   end
   
   def restart_data
     {:cmd => :restart, :uuid => uuid, :x => x, :y => y, :previous_x => previous_x, :previous_y => previous_y}
   end
   
-  def start_data
-    {:uuid => @uuid, :cmd => :start}
-  end
-
-  def direction_data
-    {:uuid => @uuid, :cmd => :direction, :direction => self.direction}
-  end
-
   def position_data
     {:uuid => @uuid, :cmd => :position, :x => self.x, :y => self.y, :previous_x => self.previous_x, :previous_y => self.previous_y, :color => @color}
   end
